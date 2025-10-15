@@ -1,0 +1,525 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Signup with valid data",
+    "description": "Verify that a new user can successfully register with valid input data and receives a JWT token.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the signup page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid user details (username, email, password)"
+      },
+      {
+        "type": "action",
+        "description": "Submit the signup form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user receives a valid JWT token and is redirected to a protected page"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Signup with invalid data",
+    "description": "Ensure the signup form validates inputs and shows appropriate errors for invalid user data.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the signup page"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid user details (e.g., invalid email, weak password, missing username)"
+      },
+      {
+        "type": "action",
+        "description": "Submit the signup form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation error messages are displayed and no JWT token is issued"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "User login with correct credentials",
+    "description": "Verify that existing users can login successfully with valid credentials and receive JWT token.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid username/email and password"
+      },
+      {
+        "type": "action",
+        "description": "Click login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Check login is successful and JWT token is stored"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "User login with incorrect credentials",
+    "description": "Verify login fails with invalid username or password and user is notified.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter incorrect username/email or password"
+      },
+      {
+        "type": "action",
+        "description": "Click login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login fails and error message is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Access protected routes with valid JWT",
+    "description": "Verify that a user with a valid JWT token can access protected routes successfully.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and obtain valid JWT token"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access protected pages (e.g., dashboard)"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm access is granted and content is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Access protected routes without JWT or with invalid JWT",
+    "description": "Ensure users without a valid JWT token cannot access protected routes and are redirected.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to access protected routes without JWT or with expired/invalid JWT"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is redirected to login page or receives unauthorized error"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Browse services by category",
+    "description": "Verify users can filter service listings by different categories and see relevant services.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to Browse services page"
+      },
+      {
+        "type": "action",
+        "description": "Select a category filter from the listings UI"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm service list updates to show only services from selected category"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Search services by keyword",
+    "description": "Verify users can search services by keywords and receive accurate search results.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Browse services page"
+      },
+      {
+        "type": "action",
+        "description": "Input a search keyword in the search bar"
+      },
+      {
+        "type": "action",
+        "description": "Submit the search query"
+      },
+      {
+        "type": "assertion",
+        "description": "Validate that service listings update to match the search keyword"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Real-time updates for new service listings",
+    "description": "Verify users receive real-time updates via Socket.IO when new services are listed.",
+    "category": "integration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open Browse services page on client A"
+      },
+      {
+        "type": "action",
+        "description": "On client B, create a new valid service listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm client A receives a real-time notification and service list updates without refresh"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Create new service listing with valid input",
+    "description": "Ensure authenticated users can create a new service listing with valid form input.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to List Service page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in all required fields in the listing form (service name, description, category, etc.)"
+      },
+      {
+        "type": "action",
+        "description": "Submit the form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify new service is saved in the database and appears in the user's listings"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Create service listing with invalid input",
+    "description": "Validate form input rules and prevent creation of service listing if any input is invalid or missing.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to List Service page"
+      },
+      {
+        "type": "action",
+        "description": "Leave required form fields empty or enter invalid data"
+      },
+      {
+        "type": "action",
+        "description": "Submit the form"
+      },
+      {
+        "type": "assertion",
+        "description": "Check for appropriate validation error messages and no new listing is created"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Create trade offer successfully",
+    "description": "Verify a logged-in user can create a trade offer on an available service and involved parties are notified.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and browse available services"
+      },
+      {
+        "type": "action",
+        "description": "Select a service and initiate a trade offer"
+      },
+      {
+        "type": "action",
+        "description": "Submit the trade offer form"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm trade offer is recorded and real-time notifications via Socket.IO are sent to relevant users"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Accept trade offer",
+    "description": "Verify a trade offer recipient can accept the offer and both users see instant status updates in their dashboard.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as the recipient of a trade offer"
+      },
+      {
+        "type": "action",
+        "description": "Locate pending trade offer in dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Accept the trade offer"
+      },
+      {
+        "type": "assertion",
+        "description": "Validate trade status updates to accepted; both users’ dashboards reflect new status immediately"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Decline trade offer",
+    "description": "Verify recipient can decline a trade offer and relevant parties are notified with real-time update and dashboard refresh.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as recipient of a pending trade offer"
+      },
+      {
+        "type": "action",
+        "description": "Decline the trade offer"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm trade status changes to declined and real-time notifications update all affected users' dashboards"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Cancel trade offer",
+    "description": "Verify an offer creator can cancel their trade offer before it is accepted and the system reflects the cancellation instantly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as creator of a pending trade offer"
+      },
+      {
+        "type": "action",
+        "description": "Cancel the trade offer"
+      },
+      {
+        "type": "assertion",
+        "description": "Validate trade status is updated to cancelled and all involved users receive real-time updates"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Complete trade offer",
+    "description": "Verify that trade offers can be marked completed by users and the final status is reflected in dashboards correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as either party of an accepted trade offer"
+      },
+      {
+        "type": "action",
+        "description": "Mark the trade offer as completed"
+      },
+      {
+        "type": "assertion",
+        "description": "Check the trade is flagged as completed and dashboards show updated final status instantly"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Dashboard displays current user listings",
+    "description": "Verify the user dashboard correctly shows the user’s active service listings with real-time updates.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm all the user's current service listings are displayed accurately"
+      },
+      {
+        "type": "action",
+        "description": "Create or update a service listing from another client/session"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard updates immediately to reflect changes"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Dashboard reflects user trades and statistics",
+    "description": "Ensure the dashboard shows up-to-date trades statuses, trade counts, and statistics, updating in real-time.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and open dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Check trade lists and statistics (active, completed, declined, cancelled) are displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "On separate session, modify a trade status (accept, decline, complete, cancel)"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm dashboard reflects status change instantly via real-time update"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Real-time trade offer notifications to multiple users",
+    "description": "Validate that real-time Socket.IO messages propagate trade offer changes accurately to all involved parties’ clients.",
+    "category": "integration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "User A creates a trade offer to User B"
+      },
+      {
+        "type": "assertion",
+        "description": "User B receives an immediate notification"
+      },
+      {
+        "type": "action",
+        "description": "User B accepts or declines the offer"
+      },
+      {
+        "type": "assertion",
+        "description": "User A’s UI updates instantly reflecting the change"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Form input validation prevents submission of malformed data",
+    "description": "Verify that form inputs for service listing and trade offers reject invalid or malicious input and produce errors.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to submit listing/trade forms with invalid formats (e.g. script injection, empty required fields)"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm input validations block submission and display meaningful error messages"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Unauthorized attempts to create listings or trades are blocked",
+    "description": "Ensure API endpoints reject attempts to create or modify resources without proper JWT authentication.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Call API endpoints for creating listings and trades without sending JWT token"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify server returns authentication error and no data changes"
+      },
+      {
+        "type": "action",
+        "description": "Call same endpoints with an expired or malformed JWT token"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm unauthorized errors are returned"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Search returns no results for unmatched queries",
+    "description": "Verify that entering search keywords that yield no matching services returns an empty list with a proper message.",
+    "category": "edge case",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Browse page and enter a nonsense search term"
+      },
+      {
+        "type": "action",
+        "description": "Submit the search"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the service list is empty and a 'no results found' message is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Handling trade offer on non-existent or already completed service",
+    "description": "Verify system gracefully rejects trade operations on services that do not exist or whose trade status is final.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to create a trade offer for a service that does not exist or is completed/cancelled"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify API returns error and no trade is created"
+      }
+    ]
+  }
+]

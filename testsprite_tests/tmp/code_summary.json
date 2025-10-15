@@ -1,0 +1,131 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "shadcn/ui",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "Mongoose",
+    "Socket.IO",
+    "Axios",
+    "Zod",
+    "JWT"
+  ],
+  "features": [
+    {
+      "name": "Authentication Context",
+      "description": "Manages user auth state, tokens, and protected routes; integrates with backend auth endpoints.",
+      "files": [
+        "src/contexts/AuthContext.tsx",
+        "src/components/ProtectedRoute.tsx",
+        "server/routes/auth.js",
+        "server/middleware/auth.js",
+        "server/models/User.js"
+      ]
+    },
+    {
+      "name": "Trade Management & Real-time",
+      "description": "Handles trade offers and statuses with real-time updates via Socket.IO; replaces mock data with live API calls.",
+      "files": [
+        "src/contexts/TradeContext.tsx",
+        "src/pages/TradeCenter.tsx",
+        "server/routes/trades.js",
+        "server/models/Trade.js",
+        "server/socket.js"
+      ]
+    },
+    {
+      "name": "Service Browsing & Real-time",
+      "description": "Displays services with category and search filters; subscribes to Socket.IO to receive new services in real-time.",
+      "files": [
+        "src/pages/Browse.tsx",
+        "server/routes/services.js",
+        "server/models/Service.js",
+        "server/socket.js"
+      ]
+    },
+    {
+      "name": "Service Listing",
+      "description": "Form to create a service with validation and authenticated API requests.",
+      "files": [
+        "src/pages/ListService.tsx",
+        "server/routes/services.js",
+        "server/models/Service.js"
+      ]
+    },
+    {
+      "name": "UI Components",
+      "description": "Reusable layout and UI primitives used across pages.",
+      "files": [
+        "src/components/app-sidebar.tsx",
+        "src/components/navigation-header.tsx",
+        "src/components/theme-provider.tsx",
+        "src/components/ProtectedRoute.tsx",
+        "src/components/ui/"
+      ]
+    },
+    {
+      "name": "Core App",
+      "description": "App shell, routing, and base pages.",
+      "files": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/pages/Index.tsx",
+        "src/pages/NotFound.tsx"
+      ]
+    },
+    {
+      "name": "User Pages",
+      "description": "User-facing pages including auth and dashboard views.",
+      "files": [
+        "src/pages/Login.tsx",
+        "src/pages/SignUp.tsx",
+        "src/pages/Dashboard.tsx",
+        "src/pages/Categories.tsx",
+        "src/pages/About.tsx",
+        "src/pages/Contact.tsx",
+        "src/pages/Features.tsx"
+      ]
+    },
+    {
+      "name": "Hooks",
+      "description": "Custom hooks for UI interactions and notifications.",
+      "files": [
+        "src/hooks/use-toast.ts",
+        "src/hooks/use-mobile.tsx"
+      ]
+    },
+    {
+      "name": "Utilities",
+      "description": "General utility helpers.",
+      "files": [
+        "src/lib/utils.ts"
+      ]
+    },
+    {
+      "name": "Server Entry & Socket",
+      "description": "Express server setup and Socket.IO integration.",
+      "files": [
+        "server/index.js",
+        "server/socket.js",
+        "server/.env"
+      ]
+    },
+    {
+      "name": "Build & Config",
+      "description": "Build configuration and tooling settings.",
+      "files": [
+        "vite.config.ts",
+        "tailwind.config.ts",
+        "tsconfig.json",
+        "tsconfig.app.json",
+        "tsconfig.node.json",
+        "eslint.config.js",
+        "postcss.config.js"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "project": "ServiceSwap",
+    "date": "2025-10-04",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "ServiceSwap is a real-time platform that enables users to trade and share subscription services. The platform provides functionalities to list owned services, browse available ones with search and filters, and engage in secure trade offers with real-time notifications and updates.",
+  "core_goals": [
+    "Enable users to securely list and manage their subscription services.",
+    "Allow users to browse, search, and filter services available for trade.",
+    "Facilitate real-time trade offer creation, acceptance, decline, cancellation, and completion.",
+    "Maintain up-to-date user dashboards displaying listings, purchases, and trade statistics.",
+    "Ensure secure authentication and authorization for all user operations using JWT.",
+    "Provide real-time notifications and updates via Socket.IO for services and trades."
+  ],
+  "key_features": [
+    "User Authentication and Authorization using JWT with signup, login, and protected routes.",
+    "Service Marketplace with browsing, category filters, search functionality, and real-time new service updates.",
+    "Service Listing interface with validated form submission for authenticated users.",
+    "Trade Management system supporting creating, accepting, declining, cancelling, and completing trade offers with real-time Socket.IO updates.",
+    "User Dashboard showing personal listings, trades, and statistics.",
+    "Reusable UI components and layout primitives for consistent look and feel.",
+    "Robust backend API built with Node.js and Express handling authentication, services, and trades.",
+    "Real-time communication layer using Socket.IO for instant client-server event propagation."
+  ],
+  "user_flow_summary": [
+    "User signs up or logs in through authentication pages and obtains a JWT token.",
+    "Logged-in users can browse services by category or search terms, receiving real-time updates about new listings.",
+    "Users create new service listings via a form that validates input before submission.",
+    "Users initiate trade offers on services, with offers updating trade status and notifying involved parties in real-time.",
+    "Users can accept, decline, cancel, or complete trade offers with instant updates reflected in their dashboards.",
+    "Dashboard displays current user stats, active trades, and owned listings regularly updated with real-time events."
+  ],
+  "validation_criteria": [
+    "Successful user registration, login, and JWT secured protected route access.",
+    "Accurate and responsive service browsing with functional search, filters, and updated real-time service listing.",
+    "Service creation form works with input validation and persists new services to the database.",
+    "Trade operations (create, accept, decline, cancel, complete) execute successfully with real-time state synchronization across affected users.",
+    "Effective real-time notifications for new services and trade offer changes delivered via Socket.IO.",
+    "User dashboard reflects all relevant data correctly and updates dynamically with backend changes."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React",
+      "Vite",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "Mongoose",
+      "Socket.IO",
+      "Axios",
+      "Zod",
+      "JWT"
+    ],
+    "features": [
+      {
+        "name": "Authentication Context",
+        "description": "Manages user auth state, tokens, and protected routes; integrates with backend auth endpoints.",
+        "files": [
+          "src/contexts/AuthContext.tsx",
+          "src/components/ProtectedRoute.tsx",
+          "server/routes/auth.js",
+          "server/middleware/auth.js",
+          "server/models/User.js"
+        ]
+      },
+      {
+        "name": "Trade Management & Real-time",
+        "description": "Handles trade offers and statuses with real-time updates via Socket.IO; replaces mock data with live API calls.",
+        "files": [
+          "src/contexts/TradeContext.tsx",
+          "src/pages/TradeCenter.tsx",
+          "server/routes/trades.js",
+          "server/models/Trade.js",
+          "server/socket.js"
+        ]
+      },
+      {
+        "name": "Service Browsing & Real-time",
+        "description": "Displays services with category and search filters; subscribes to Socket.IO to receive new services in real-time.",
+        "files": [
+          "src/pages/Browse.tsx",
+          "server/routes/services.js",
+          "server/models/Service.js",
+          "server/socket.js"
+        ]
+      },
+      {
+        "name": "Service Listing",
+        "description": "Form to create a service with validation and authenticated API requests.",
+        "files": [
+          "src/pages/ListService.tsx",
+          "server/routes/services.js",
+          "server/models/Service.js"
+        ]
+      },
+      {
+        "name": "UI Components",
+        "description": "Reusable layout and UI primitives used across pages.",
+        "files": [
+          "src/components/app-sidebar.tsx",
+          "src/components/navigation-header.tsx",
+          "src/components/theme-provider.tsx",
+          "src/components/ProtectedRoute.tsx",
+          "src/components/ui/"
+        ]
+      },
+      {
+        "name": "Core App",
+        "description": "App shell, routing, and base pages.",
+        "files": [
+          "src/main.tsx",
+          "src/App.tsx",
+          "src/pages/Index.tsx",
+          "src/pages/NotFound.tsx"
+        ]
+      },
+      {
+        "name": "User Pages",
+        "description": "User-facing pages including auth and dashboard views.",
+        "files": [
+          "src/pages/Login.tsx",
+          "src/pages/SignUp.tsx",
+          "src/pages/Dashboard.tsx",
+          "src/pages/Categories.tsx",
+          "src/pages/About.tsx",
+          "src/pages/Contact.tsx",
+          "src/pages/Features.tsx"
+        ]
+      },
+      {
+        "name": "Hooks",
+        "description": "Custom hooks for UI interactions and notifications.",
+        "files": [
+          "src/hooks/use-toast.ts",
+          "src/hooks/use-mobile.tsx"
+        ]
+      },
+      {
+        "name": "Utilities",
+        "description": "General utility helpers.",
+        "files": [
+          "src/lib/utils.ts"
+        ]
+      },
+      {
+        "name": "Server Entry & Socket",
+        "description": "Express server setup and Socket.IO integration.",
+        "files": [
+          "server/index.js",
+          "server/socket.js",
+          "server/.env"
+        ]
+      },
+      {
+        "name": "Build & Config",
+        "description": "Build configuration and tooling settings.",
+        "files": [
+          "vite.config.ts",
+          "tailwind.config.ts",
+          "tsconfig.json",
+          "tsconfig.app.json",
+          "tsconfig.node.json",
+          "eslint.config.js",
+          "postcss.config.js"
+        ]
+      }
+    ]
+  }
+}
