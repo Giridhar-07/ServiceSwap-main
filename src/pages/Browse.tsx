@@ -163,51 +163,56 @@ const Browse = () => {
   }, [selectedCategory, searchTerm]);
 
   const handleSendTradeOffer = async () => {
-    if (!user || !selectedService) return;
-    
-    if (!canUserTrade(user.id)) {
-      const timeRemaining = getTradeTimeRemaining(user.id);
-      toast({
-        title: "Trade Cooldown Active",
-        description: `Please wait ${timeRemaining} minutes before sending another trade offer.`,
-        variant: "destructive"
-      });
+    if (!user) {
+      toast({ title: 'Please login', description: 'Login to send trade offers.' });
+      return;
+    }
+
+    const service = selectedService as any;
+    if (!service) {
+      toast({ title: 'No service selected', description: 'Select a service to trade.' });
+      return;
+    }
+
+    // Block self-trading and missing seller
+    const seller = service.seller;
+    const sellerId = typeof seller === 'object' ? seller?._id : seller;
+    if (!sellerId) {
+      toast({ title: 'Invalid trade', description: 'Service is missing owner information.' });
+      return;
+    }
+    if (sellerId === user.id) {
+      toast({ title: 'Invalid trade', description: 'You cannot trade on your own service.' });
+      return;
+    }
+
+    // Validate price > 0
+    const offerPrice = Number(tradeOffer.offerPrice || service.price || service.originalPrice || 0);
+    if (!offerPrice || offerPrice <= 0 || Number.isNaN(offerPrice)) {
+      toast({ title: 'Invalid price', description: 'Offer price must be greater than 0.' });
       return;
     }
 
     try {
       await sendTradeOffer({
         fromUserId: user.id,
-        fromUserName: user.name,
-        toUserId: "seller_id", // In real app, this would be the actual seller's ID
-        toUserName: selectedService.sellerName || 'Seller',
-        serviceId: selectedService._id,
-        serviceName: selectedService.title,
-        serviceCategory: selectedService.category,
-        offerPrice: Number(tradeOffer.offerPrice),
-        originalPrice: selectedService.originalPrice,
-        message: tradeOffer.message,
-        tradeDetails: {
-          duration: "Duration from service details",
-          accessType: "share"
-        },
-        verificationRequired: true,
-        tradeProtectionLevel: "premium"
+        fromUserName: user.name || user.email || 'You',
+        toUserId: String(sellerId),
+        toUserName: service.sellerName || 'Seller',
+        serviceId: service._id,
+        serviceName: service.title,
+        serviceCategory: service.category || 'Other',
+        offerPrice,
+        originalPrice: Number(service.originalPrice || offerPrice),
+        message: tradeOffer.message || `Interested in ${service.title}. Offering ${offerPrice}.`,
+        tradeDetails: { duration: 'Not specified', accessType: 'share' },
+        verificationRequired: false,
+        tradeProtectionLevel: 'basic'
       });
-
-      toast({
-        title: "Trade Offer Sent!",
-        description: `Your offer for ${selectedService.title} has been sent.`,
-      });
-      
-      setTradeOffer({ offerPrice: "", message: "" });
-      setSelectedService(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send trade offer. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: 'Offer sent', description: 'Your trade offer was submitted.' });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Failed to send offer';
+      toast({ title: 'Error', description: msg });
     }
   };
 
@@ -377,61 +382,76 @@ const Browse = () => {
                           </div>
                         </DialogContent>
                       </Dialog>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            className="flex-1" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedService(service);
-                              setTradeOffer({ offerPrice: service.price.toString(), message: "" });
-                            }}
-                          >
-                            <ArrowRightLeft className="w-4 h-4 mr-2" />
-                            Trade
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Send Trade Offer</DialogTitle>
-                            <DialogDescription>
-                              Send a trade offer to {service.sellerName || 'Seller'} for {service.title}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="offerPrice">Your Offer (₹)</Label>
-                              <Input
-                                id="offerPrice"
-                                type="number"
-                                value={tradeOffer.offerPrice}
-                                onChange={(e) => setTradeOffer(prev => ({ ...prev, offerPrice: e.target.value }))}
-                                placeholder={service.price.toString()}
-                              />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Suggested: ₹{service.price} (Original: ₹{service.originalPrice})
-                              </p>
-                            </div>
-                            <div>
-                              <Label htmlFor="message">Message (Optional)</Label>
-                              <Textarea
-                                id="message"
-                                value={tradeOffer.message}
-                                onChange={(e) => setTradeOffer(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="Hi! I'm interested in this service..."
-                                rows={3}
-                              />
-                            </div>
-                            <Button 
-                              onClick={handleSendTradeOffer}
-                              className="w-full"
-                              disabled={isLoading || !tradeOffer.offerPrice}
+                      {
+                        (user && ((typeof (service as any).seller === 'object' ? (service as any).seller?._id : (service as any).seller) === user.id))
+                          ? (
+                            <Button
+                              className="flex-1"
+                              size="sm"
+                              variant="secondary"
+                              disabled
+                              title="You cannot trade on your own service"
                             >
-                              {isLoading ? "Sending..." : "Send Trade Offer"}
+                              Own Listing
                             </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                          ) : (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  className="flex-1" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedService(service);
+                                    setTradeOffer({ offerPrice: service.price.toString(), message: "" });
+                                  }}
+                                >
+                                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                  Trade
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Send Trade Offer</DialogTitle>
+                                  <DialogDescription>
+                                    Send a trade offer to {service.sellerName || 'Seller'} for {service.title}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="offerPrice">Your Offer (₹)</Label>
+                                    <Input
+                                      id="offerPrice"
+                                      type="number"
+                                      value={tradeOffer.offerPrice}
+                                      onChange={(e) => setTradeOffer(prev => ({ ...prev, offerPrice: e.target.value }))}
+                                      placeholder={service.price.toString()}
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Suggested: ₹{service.price} (Original: ₹{service.originalPrice})
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="message">Message (Optional)</Label>
+                                    <Textarea
+                                      id="message"
+                                      value={tradeOffer.message}
+                                      onChange={(e) => setTradeOffer(prev => ({ ...prev, message: e.target.value }))}
+                                      placeholder="Hi! I'm interested in this service..."
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <Button 
+                                    onClick={handleSendTradeOffer}
+                                    className="w-full"
+                                    disabled={isLoading || !tradeOffer.offerPrice}
+                                  >
+                                    {isLoading ? "Sending..." : "Send Trade Offer"}
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )
+                      }
                     </div>
                   </CardContent>
                 </Card>

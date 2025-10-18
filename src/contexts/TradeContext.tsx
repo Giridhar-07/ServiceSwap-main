@@ -349,6 +349,16 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
     
     setIsLoading(true);
     try {
+      // Prevent sending offers to self (extra guard)
+      if ((offerData as any).toUserId && (offerData as any).toUserId === user.id) {
+        throw new Error('You cannot trade on your own service');
+      }
+
+      // Basic client-side validation to reduce backend 400s
+      if (!offerData.offerPrice || offerData.offerPrice <= 0) {
+        throw new Error('Offer price must be greater than 0');
+      }
+
       const response = await axios.post('/api/trades', {
         serviceId: offerData.serviceId,
         offerPrice: offerData.offerPrice,
@@ -371,8 +381,16 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
         [user.id]: new Date(Date.now() + 5 * 60 * 1000) // 5 minute cooldown
       }));
       
-    } catch (error) {
-      console.error('Error sending trade offer:', error);
+    } catch (error: any) {
+      // Surface backend validation messages when available
+      if (axios.isAxiosError(error)) {
+        const backendMsg = (error.response?.data as any)?.message;
+        const errorsArr = (error.response?.data as any)?.errors;
+        const validationMsg = Array.isArray(errorsArr) && errorsArr.length > 0 ? errorsArr[0]?.msg : undefined;
+        console.error('Error sending trade offer:', backendMsg || validationMsg || error.message);
+      } else {
+        console.error('Error sending trade offer:', error);
+      }
       throw error;
     } finally {
       setIsLoading(false);
