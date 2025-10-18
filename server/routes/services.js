@@ -149,4 +149,81 @@ router.put(
   }
 );
 
+// PUT /api/services/:id - edit service details
+router.put(
+  '/:id',
+  authRequired,
+  [
+    param('id').isMongoId(),
+    body('title').optional().isString().trim().isLength({ min: 5 }),
+    body('description').optional().isString().trim().isLength({ min: 20 }),
+    body('category').optional().isString().trim().isLength({ min: 2 }),
+    body('price').optional().isNumeric(),
+    body('originalPrice').optional().isNumeric(),
+    body('users').optional().isInt({ min: 0, max: 10 }),
+    body('location').optional().isString().trim(),
+    body('status').optional().isString().isIn(['active', 'pending', 'sold', 'archived'])
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const service = await Service.findById(req.params.id);
+      if (!service) return res.status(404).json({ error: 'Service not found' });
+      if (service.seller?.toString() !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to edit this service' });
+      }
+
+      const fields = ['title', 'description', 'category', 'price', 'originalPrice', 'users', 'location', 'status'];
+      fields.forEach((f) => {
+        if (req.body[f] !== undefined) {
+          service[f] = f === 'category' ? String(req.body[f]).toLowerCase() : req.body[f];
+        }
+      });
+
+      await service.save();
+
+      const io = getIO();
+      io.to('services').emit('service_updated', { id: service._id.toString(), service });
+      io.to(`user:${req.user.id}`).emit('service_updated', { id: service._id.toString(), service });
+
+      res.json(service);
+    } catch (err) {
+      console.error('[services:edit:error]', err);
+      res.status(500).json({ error: 'Failed to update service' });
+    }
+  }
+);
+
+// DELETE /api/services/:id - delete a service
+router.delete(
+  '/:id',
+  authRequired,
+  [param('id').isMongoId()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const service = await Service.findById(req.params.id);
+      if (!service) return res.status(404).json({ error: 'Service not found' });
+      if (service.seller?.toString() !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to delete this service' });
+      }
+
+      await service.deleteOne();
+
+      const io = getIO();
+      io.to('services').emit('service_deleted', { id: req.params.id });
+      io.to(`user:${req.user.id}`).emit('service_deleted', { id: req.params.id });
+
+      res.json({ id: req.params.id, deleted: true });
+    } catch (err) {
+      console.error('[services:delete:error]', err);
+      res.status(500).json({ error: 'Failed to delete service' });
+    }
+  }
+);
+
 module.exports = router;

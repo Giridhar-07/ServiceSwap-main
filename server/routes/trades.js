@@ -95,9 +95,9 @@ router.post('/',
         status: 'pending',
         expiresAt,
         tradeDetails: tradeDetails || {},
-        escrowStatus: 'not_required',
+        escrowStatus: 'none',
         verificationRequired: false,
-        tradeProtectionLevel: 'standard'
+        tradeProtectionLevel: 'basic'
       });
 
       await newTrade.save();

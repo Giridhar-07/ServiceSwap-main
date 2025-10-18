@@ -6,8 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import DashboardModals from "./DashboardModals";
 import { 
   Plus, 
   Eye, 
@@ -34,6 +61,19 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const socketRef = useRef<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<any | null>(null);
+  const [editData, setEditData] = useState<any>({
+    title: "",
+    description: "",
+    category: "streaming",
+    price: 0,
+    originalPrice: 0,
+    users: 1,
+    location: "",
+    status: "active",
+  });
 
   // Real data
   const [myListings, setMyListings] = useState<any[]>([]);
@@ -69,6 +109,9 @@ const Dashboard = () => {
           interested: Array.isArray(d.interestedUsers) ? d.interestedUsers.length : 0,
           slotsLeft: d.users ?? 0,
           createdAt: d.createdAt,
+          description: d.description,
+          location: d.location ?? "",
+          users: d.users ?? 1,
         }));
         setMyListings(mapped);
       } catch (err) {
@@ -113,6 +156,32 @@ const Dashboard = () => {
       socketRef.current.on('service_status_updated', (evt: any) => {
         const { id, status } = evt || {};
         setMyListings(prev => prev.map(item => item.id === id ? { ...item, status } : item));
+      });
+
+      socketRef.current.on('service_updated', (evt: any) => {
+        const { id, service } = evt || {};
+        if (!id || !service) return;
+        setMyListings(prev => prev.map(item => item.id === id ? {
+          ...item,
+          title: service.title ?? item.title,
+          category: service.category ?? item.category,
+          price: service.price ?? item.price,
+          originalPrice: service.originalPrice ?? item.originalPrice,
+          status: service.status ?? item.status,
+          views: service.views ?? item.views,
+          interested: Array.isArray(service.interestedUsers) ? service.interestedUsers.length : item.interested,
+          slotsLeft: service.users ?? item.slotsLeft,
+          createdAt: service.createdAt ?? item.createdAt,
+          description: service.description ?? item.description,
+          location: service.location ?? item.location,
+          users: service.users ?? item.users,
+        } : item));
+      });
+
+      socketRef.current.on('service_deleted', (evt: any) => {
+        const { id } = evt || {};
+        if (!id) return;
+        setMyListings(prev => prev.filter(item => item.id !== id));
       });
 
       return () => {
@@ -338,13 +407,37 @@ const Dashboard = () => {
                             <p className="text-sm text-muted-foreground line-through">₹{listing.originalPrice}</p>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" type="button" onClick={() => navigate('/list-service')}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              onClick={() => {
+                                setSelectedListing(listing);
+                                setEditData({
+                                  title: listing.title ?? "",
+                                  description: listing.description ?? "",
+                                  category: listing.category ?? "streaming",
+                                  price: listing.price ?? 0,
+                                  originalPrice: listing.originalPrice ?? 0,
+                                  users: listing.users ?? listing.slotsLeft ?? 1,
+                                  location: listing.location ?? "",
+                                  status: listing.status ?? "active",
+                                });
+                                setEditOpen(true);
+                              }}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button variant="outline" size="sm" type="button" onClick={() => navigate('/browse')}>
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" type="button" onClick={() => toast({ title: 'Delete not implemented', description: 'This is a demo action.' })}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              type="button"
+                              onClick={() => { setSelectedListing(listing); setDeleteOpen(true); }}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -452,6 +545,17 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </section>
+      <DashboardModals
+        editOpen={editOpen}
+        onEditOpenChange={setEditOpen}
+        deleteOpen={deleteOpen}
+        onDeleteOpenChange={setDeleteOpen}
+        selectedListing={selectedListing}
+        editData={editData}
+        setEditData={setEditData}
+        setMyListings={setMyListings}
+        toast={toast}
+      />
     </div>
   );
 };
