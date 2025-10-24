@@ -5,12 +5,23 @@ const TradeSession = require('../models/TradeSession');
 const TradeAudit = require('../models/TradeAudit');
 const User = require('../models/User');
 const { authRequired } = require('../middleware/auth');
+const { csrfOptional } = require('../middleware/security');
 const { getIO } = require('../socket');
 
 const sessionLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => {
+    const userId = req.user && req.user.id ? req.user.id : null;
+    if (userId) return String(userId);
+    const ipHeader = req.headers['x-forwarded-for'] || req.headers['x-real-ip'];
+    const headerIp = Array.isArray(ipHeader) ? ipHeader[0] : ipHeader;
+    const rawIp = headerIp || (req.socket && req.socket.remoteAddress) || req.ip;
+    const ipStr = typeof rawIp === 'string' ? rawIp : '';
+    // Normalize IPv6 forms to a stable key to avoid ERR_ERL_KEY_GEN_IPV6
+    if (ipStr.includes(':')) return 'local_ipv6';
+    return ipStr || 'unknown';
+  },
 });
 
 function generateMfaCode() {
@@ -173,10 +184,12 @@ router.post(
 router.post(
   '/:id/finalize',
   authRequired,
+  csrfOptional(),
+  sessionLimiter,
   [
     param('id').isMongoId(),
-    body('mfaA').isString().trim().isLength({ min: 6, max: 6 }),
-    body('mfaB').isString().trim().isLength({ min: 6, max: 6 }),
+    body('mfaA').isString().trim().isLength({ min: 6, max: 6 }).isNumeric(),
+    body('mfaB').isString().trim().isLength({ min: 6, max: 6 }).isNumeric(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -184,26 +197,68 @@ router.post(
 
     const { id } = req.params;
     const { mfaA, mfaB } = req.body;
-    const session = await TradeSession.findById(id);
-    if (!session) return res.status(404).json({ error: 'Session not found' });
+    const userId = req.user.id;
+    console.info('[tradeSessions:finalize:start]', { id, userId, mfaAProvided: mfaA, mfaBProvided: mfaB });
 
+    const session = await TradeSession.findById(id);
+    if (!session) {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'session_not_found' });
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    console.info('[tradeSessions:finalize:session_state]', {
+      id,
+      userId,
+      sessionStatus: session.status,
+      confirmationsA: session.confirmations.a,
+      confirmationsB: session.confirmations.b,
+      mfaAExpected: session.mfa.a,
+      mfaBExpected: session.mfa.b,
+      participantsA: session.participants.a.toString(),
+      participantsB: session.participants.b.toString(),
+    });
+
+    // Must be participant
+    if (![session.participants.a.toString(), session.participants.b.toString()].includes(userId)) {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'not_participant' });
+      return res.status(403).json({ error: 'Not a participant in this session' });
+    }
+
+    // Prevent double finalization
+    if (session.status === 'finalized') {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'already_finalized' });
+      return res.status(400).json({ error: 'Session already finalized' });
+    }
+
+    // Both partners must have confirmed and session must be in confirmed state
     if (!(session.confirmations.a && session.confirmations.b)) {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'not_all_confirmed' });
       return res.status(400).json({ error: 'Both users must confirm before finalization' });
     }
+    if (session.status !== 'confirmed') {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'session_not_confirmed_status' });
+      return res.status(400).json({ error: 'Session not ready for finalization' });
+    }
+
+    // Verify MFA codes
     if (mfaA !== session.mfa.a || mfaB !== session.mfa.b) {
+      console.warn('[tradeSessions:finalize:denied]', { id, userId, reason: 'invalid_mfa_codes' });
       return res.status(403).json({ error: 'Invalid MFA codes' });
     }
 
     // Transfer items (domain-specific no-op here)
     session.status = 'finalized';
-    session.auditLog.push({ event: 'finalized', data: {} });
+    session.auditLog.push({ event: 'finalized', data: { by: userId } });
     await session.save();
 
     await TradeAudit.create({
       session: session._id,
       fromUser: session.participants.a,
       toUser: session.participants.b,
-      items: session.items,
+      items: {
+        a: session.items.a.map(item => item.toObject()),
+        b: session.items.b.map(item => item.toObject()),
+      },
       outcome: 'success',
     });
 
@@ -211,6 +266,7 @@ router.post(
     io.to(`user:${session.participants.a.toString()}`).emit('trade_session_finalized', { id });
     io.to(`user:${session.participants.b.toString()}`).emit('trade_session_finalized', { id });
 
+    console.info('[tradeSessions:finalize:success]', { id, userId });
     res.json({ id, status: session.status });
   }
 );

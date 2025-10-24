@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useTrade, TradeOffer } from "@/contexts/TradeContext";
+import { useTradeSession } from "@/contexts/TradeSessionContext";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Clock,
@@ -41,6 +42,14 @@ const TradeCenter = () => {
     isLoading
   } = useTrade();
   const { toast } = useToast();
+
+  // Trade Session hook and basic session state
+  const { startSession, addItems, confirm, finalize, currentSessionId, setCurrentSessionId, getSession, isLoading: isSessionLoading } = useTradeSession();
+  const [commandInput, setCommandInput] = useState("");
+  const [sessionItems, setSessionItems] = useState<{ code: string; type: 'card' | 'currency'; qty?: number }[]>([]);
+  const [mfaA, setMfaA] = useState("");
+  const [mfaB, setMfaB] = useState("");
+  const [myMfaCode, setMyMfaCode] = useState<string | null>(null); // State to hold the user's MFA code
   
   const [activeTab, setActiveTab] = useState("received");
   const [selectedTrade, setSelectedTrade] = useState<TradeOffer | null>(null);
@@ -124,6 +133,60 @@ const TradeCenter = () => {
       return `${days}d ${hours % 24}h`;
     }
     return `${hours}h ${minutes}m`;
+  };
+
+  // Trade Session action handlers
+  const onStartSession = async () => {
+    try {
+      const id = await startSession(commandInput.trim());
+      const session = getSession(id);
+      if (session?.mfa?.a) {
+        setMyMfaCode(session.mfa.a); // Set the MFA code for the current user
+        toast({ title: "Session opened", description: `Session ${id} created. Your MFA code: ${session.mfa.a}` });
+      } else {
+        toast({ title: "Session opened", description: `Session ${id} created.` });
+      }
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "An unknown error occurred.";
+      toast({ title: "Could not start session", description: message || "Check command format: kmt @UserName", variant: "destructive" });
+    }
+  };
+
+  const onPushItems = async () => {
+    if (!currentSessionId) return toast({ title: "No session", description: "Start a session first" });
+    try {
+      await addItems(currentSessionId, sessionItems);
+      toast({ title: "Items updated", description: `Pushed ${sessionItems.length} item(s)` });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "An unknown error occurred.";
+      toast({ title: "Failed to update items", description: message || "Validation failed", variant: "destructive" });
+    }
+  };
+
+  const onConfirm = async () => {
+    if (!currentSessionId) return toast({ title: "No session", description: "Start a session first" });
+    try {
+      await confirm(currentSessionId);
+      toast({ title: "Confirmed", description: "Your side is confirmed." });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "An unknown error occurred.";
+      toast({ title: "Confirm failed", description: message || "Try again", variant: "destructive" });
+    }
+  };
+
+  const onFinalize = async () => {
+    if (!currentSessionId) return toast({ title: "No session", description: "Start a session first" });
+    try {
+      await finalize(currentSessionId, mfaA, mfaB);
+      toast({ title: "Finalized", description: "Session is finalized." });
+      setCurrentSessionId(null); // Clear the current session
+      setMyMfaCode(null); // Clear the MFA code
+      setMfaA(""); // Clear MFA input
+      setMfaB(""); // Clear MFA input
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "An unknown error occurred.";
+      toast({ title: "Finalize failed", description: message || "Check MFA codes", variant: "destructive" });
+    }
   };
 
   const TradeCard = ({ trade, showActions = true }: { trade: TradeOffer; showActions?: boolean }) => (
@@ -306,6 +369,82 @@ const TradeCenter = () => {
           </div>
         </div>
       </section>
+
+      {/* Start Trade Session */}
+      <section className="px-4 pb-6">
+        <div className="container mx-auto max-w-6xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Start Trade Session</CardTitle>
+              <CardDescription>Use command format: kmt @UserName</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input value={commandInput} onChange={(e) => setCommandInput(e.target.value)} placeholder="kmt @UserName" />
+                <Button onClick={onStartSession} disabled={isSessionLoading}>Open Session</Button>
+              </div>
+              {currentSessionId && (
+                <div className="text-sm text-muted-foreground">
+                  Current session: {currentSessionId} • Status: {getSession(currentSessionId)?.status}
+                  {myMfaCode && <p className="font-semibold text-primary">Your MFA Code: {myMfaCode}</p>}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {currentSessionId && (
+        <section className="px-4 pb-12">
+          <div className="container mx-auto max-w-6xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>Session Wizard</CardTitle>
+                <CardDescription>Propose items, confirm, then finalize with MFA.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                  <div>
+                    <Label htmlFor="code">Item Code</Label>
+                    <Input id="code" placeholder="ABC123" onChange={(e)=>{ const v = e.target.value.toUpperCase(); setSessionItems(prev => [{ code: v, type: prev[0]?.type || 'card', qty: prev[0]?.qty || 1 }]); }} />
+                  </div>
+                  <div>
+                    <Label>Type</Label>
+                    <select className="border rounded h-9 px-2" onChange={(e)=>{ setSessionItems(prev => [{ code: prev[0]?.code || '', type: e.target.value as 'card'|'currency', qty: prev[0]?.qty || 1 }]); }}>
+                      <option value="card">card</option>
+                      <option value="currency">currency</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="qty">Qty</Label>
+                    <Input id="qty" type="number" min={1} max={1000} defaultValue={1} onChange={(e)=>{ const q = parseInt(e.target.value || '1', 10); setSessionItems(prev => [{ code: prev[0]?.code || '', type: prev[0]?.type || 'card', qty: q }]); }} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={()=>setSessionItems([])}>Clear</Button>
+                    <Button onClick={onPushItems} disabled={isSessionLoading || sessionItems.length === 0}>Push Items</Button>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={onConfirm} disabled={isSessionLoading}>Confirm My Items</Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                  <div>
+                    <Label htmlFor="mfaA">MFA A</Label>
+                    <Input id="mfaA" value={mfaA} onChange={(e)=>setMfaA(e.target.value)} placeholder="6-digit" />
+                  </div>
+                  <div>
+                    <Label htmlFor="mfaB">MFA B</Label>
+                    <Input id="mfaB" value={mfaB} onChange={(e)=>setMfaB(e.target.value)} placeholder="6-digit" />
+                  </div>
+                  <div>
+                    <Button onClick={onFinalize} disabled={isSessionLoading || mfaA.length!==6 || mfaB.length!==6}>Finalize</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
 
       {/* Trade Management */}
       <section className="pb-20 px-4">

@@ -103,3 +103,19 @@ ServiceSwap uses Socket.IO for real-time communication. The following events are
 - `trade_declined`: Emitted when a trade offer is declined
 - `trade_cancelled`: Emitted when a trade offer is cancelled
 - `trade_completed`: Emitted when a trade is completed
+
+## Trade Sessions Endpoints
+- `POST /api/trade-sessions` – initiate a session via command
+- `PUT /api/trade-sessions/:id/items` – add/replace your proposed items
+- `POST /api/trade-sessions/:id/confirm` – confirm your proposal
+- `POST /api/trade-sessions/:id/finalize` – finalize with MFA codes
+- `GET /api/trade-sessions/:id` – fetch session state
+
+## Admin Endpoints
+- `GET /api/admin/users` – list users
+- `PUT /api/admin/users/:id/suspend|unsuspend|ban|unban` – manage user status
+- `GET /api/admin/trades` – list trades
+- `GET /api/admin/sessions` – list trade sessions
+- `GET /api/admin/audits` – list trade audits
+
+> See `TRADE_SYSTEM_DOCUMENTATION.md` for detailed session workflow and admin API behavior.

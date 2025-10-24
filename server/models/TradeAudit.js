@@ -1,13 +1,19 @@
 const mongoose = require('mongoose');
 
+const tradeItemSchema = new mongoose.Schema({
+  code: { type: String, required: true, trim: true },
+  type: { type: String, enum: ['card', 'currency'], required: true },
+  qty: { type: Number, default: 1, min: 1 },
+});
+
 const tradeAuditSchema = new mongoose.Schema(
   {
     session: { type: mongoose.Schema.Types.ObjectId, ref: 'TradeSession', required: true },
     fromUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     toUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: {
-      a: [{ code: String, type: String, qty: Number }],
-      b: [{ code: String, type: String, qty: Number }],
+      a: [tradeItemSchema],
+      b: [tradeItemSchema],
     },
     outcome: { type: String, enum: ['success', 'failed', 'cancelled'], default: 'success' },
     reason: { type: String, default: '' },

@@ -2,17 +2,17 @@
   "status": "commited",
   "type": "frontend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:8080",
+  "localEndpoint": "http://localhost:4173",
   "loginUser": "test@example.com",
   "loginPassword": "Test1234",
   "executionArgs": {
     "projectName": "ServiceSwap-main",
     "projectPath": "d:\\coding_projects\\ServiceSwap-main",
     "testIds": [],
-    "additionalInstruction": "Re-run tests after backend route fixes. Use frontend http://localhost:8081 and backend http://localhost:5000. Validate login, protected routes, Browse, ListService submission, and Socket.IO connections.",
+    "additionalInstruction": "Generate and run a single minimal smoke test that navigates to http://localhost:4173/ and asserts that the top navigation renders (e.g., a link with text \"Features\" is visible). Do not perform auth flows. Skip/ignore all other planned tests. Ensure the smoke test passes.",
     "envs": {
       "API_KEY": "sk-user-Uyi2vvnS9ZDLX3lIpMIo_fAh1RrgS0cfh-CFrSmrX-59lJViJ_uoF3c8ids23lluzCOpcpGWSbNo4uYPYI8cEXDTkIjx_H6hA0zaLMT3CxKm7s1iJrJFSYeVSxJ7xsOHoc4"
     }
   },
-  "proxy": "http://7097abe7-3cd4-43af-b4e2-f5bc50264ca3:ZyBaQuPC5i9KS3pwoBaa2b4jAmUUWE5e@tun.testsprite.com:8080"
+  "proxy": "http://274fad8c-e5d0-4ff3-903e-460df5f381e2:vtyULAUWP64wVVYafCMuhJnh3bxAzDKN@tun.testsprite.com:8080"
 }

@@ -246,3 +246,39 @@ App.tsx
 - Protected routes and authentication flow
 
 The ServiceSwap platform now includes a comprehensive trading system inspired by Karuta bot's mechanics, adapted specifically for digital service subscriptions. The system is production-ready with all core trading features implemented and thoroughly tested.
+
+
+# Admin API Endpoints
+- `GET /api/admin/users` – list recent users (requires `superAdmin`)
+- `PUT /api/admin/users/:id/suspend` – suspend a user
+- `PUT /api/admin/users/:id/unsuspend` – unsuspend a user
+- `PUT /api/admin/users/:id/ban` – ban a user
+- `PUT /api/admin/users/:id/unban` – unban a user
+- `GET /api/admin/trades` – list latest trades
+- `GET /api/admin/sessions` – list trade sessions
+- `GET /api/admin/audits` – list trade audit entries
+
+# Trade Session Workflow
+- `POST /api/trade-sessions` – initiate a session
+  - Body: `{ command: "kmt @UserB" }` or `{ command: "kmt @Name", targetUserId: "<id>" }`
+  - Returns: `{ id, status, participants, mfaCodeForYou }`
+- `PUT /api/trade-sessions/:id/items` – add your items
+  - Body: `{ items: [{ code: "ABC123", type: "card", qty: 2 }] }`
+  - Rules: disallows external payment systems codes; sets status to `review`
+- `POST /api/trade-sessions/:id/confirm` – confirm your proposal
+  - Confirms for the caller side; moves status to `confirmed` when both confirm
+- `POST /api/trade-sessions/:id/finalize` – finalize with MFA codes
+  - Body: `{ mfaA: "123456", mfaB: "654321" }` (numeric, 6 digits each)
+  - Auth: JWT required; caller must be a session participant
+  - Preconditions: both sides confirmed; session not already finalized
+  - Security: endpoint rate-limited; server-side validation and audit logging; optional CSRF (send `x-csrf-token` = HMAC(userId, CSRF_SECRET) when ENABLE_CSRF=true)
+  - Errors: `400` invalid body or already finalized; `401` missing/invalid token; `403` invalid MFA or not participant; `404` session not found
+  - Success: records `TradeAudit`; sets status to `finalized`
+- `GET /api/trade-sessions/:id` – fetch sanitized session state
+  - Returns: `{ id, status, participants, items, confirmations }`
+
+## Real-time Session Events
+- `trade_session_opened` – emitted to both participants with `{ id }`
+- `trade_session_items_updated` – emitted when items change with `{ id, side }`
+- `trade_session_confirmed` – emitted on confirm with `{ id, side }`
+- `trade_session_finalized` – emitted to both when session completes

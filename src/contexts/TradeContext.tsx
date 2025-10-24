@@ -9,6 +9,8 @@ declare global {
 const io = window.io;
 import axios from 'axios';
 
+export interface Credentials { username?: string; email?: string; password?: string; additionalInfo?: string }
+
 export interface TradeOffer {
   id: string;
   fromUserId: string;
@@ -32,12 +34,7 @@ export interface TradeOffer {
   tradeDetails: {
     duration: string; // e.g., "3 months remaining"
     accessType: 'transfer' | 'share'; // transfer ownership or share access
-    credentials?: {
-      username?: string;
-      email?: string;
-      password?: string;
-      additionalInfo?: string;
-    };
+    credentials?: Credentials;
   };
   
   // Security features
@@ -123,11 +120,12 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
 
       // Socket event listeners
       newSocket.on('connect', () => {
-        console.log('Socket connected');
+        console.log('[TradeContext] Socket connected');
         fetchTradeData();
       });
 
       newSocket.on('new_trade_offer', (trade: BackendTrade) => {
+        console.log('[TradeContext] Received new_trade_offer:', trade);
         // Map backend trade to frontend TradeOffer format
         const newOffer = mapTradeToTradeOffer(trade);
         setPendingOffers(prev => [...prev, newOffer]);
@@ -138,7 +136,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
           userId: user.id,
           type: 'offer_received',
           tradeId: trade._id,
-          message: `New trade offer from ${trade.fromUser.name} for ${trade.service.title}`,
+          message: `New trade offer from ${typeof trade.fromUser === 'object' && trade.fromUser !== null ? trade.fromUser.name : 'Unknown User'} for ${typeof trade.service === 'object' && trade.service !== null ? trade.service.title : 'Unknown Service'}`,
           read: false,
           createdAt: new Date()
         };
@@ -147,10 +145,11 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       });
 
       newSocket.on('trade_accepted', (trade: BackendTrade) => {
+        console.log('[TradeContext] Received trade_accepted:', trade);
         const updatedOffer = mapTradeToTradeOffer(trade);
         
         // Update sent offers
-        setSentOffers(prev => prev.map(offer => 
+        setSentOffers(prev => prev.map(offer =>
           offer.id === trade._id ? updatedOffer : offer
         ));
         
@@ -160,7 +159,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
           userId: user.id,
           type: 'offer_accepted',
           tradeId: trade._id,
-          message: `Your trade offer for ${trade.service.title} was accepted`,
+          message: `Your trade offer for ${typeof trade.service === 'object' && trade.service !== null ? trade.service.title : 'Unknown Service'} was accepted`,
           read: false,
           createdAt: new Date()
         };
@@ -169,10 +168,11 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       });
 
       newSocket.on('trade_declined', (trade: BackendTrade) => {
+        console.log('[TradeContext] Received trade_declined:', trade);
         const updatedOffer = mapTradeToTradeOffer(trade);
         
         // Update sent offers
-        setSentOffers(prev => prev.map(offer => 
+        setSentOffers(prev => prev.map(offer =>
           offer.id === trade._id ? updatedOffer : offer
         ));
         
@@ -182,7 +182,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
           userId: user.id,
           type: 'offer_declined',
           tradeId: trade._id,
-          message: `Your trade offer for ${trade.service.title} was declined`,
+          message: `Your trade offer for ${typeof trade.service === 'object' && trade.service !== null ? trade.service.title : 'Unknown Service'} was declined`,
           read: false,
           createdAt: new Date()
         };
@@ -191,10 +191,11 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       });
 
       newSocket.on('trade_cancelled', (trade: BackendTrade) => {
+        console.log('[TradeContext] Received trade_cancelled:', trade);
         const updatedOffer = mapTradeToTradeOffer(trade);
         
         // Update pending offers
-        setPendingOffers(prev => prev.map(offer => 
+        setPendingOffers(prev => prev.map(offer =>
           offer.id === trade._id ? updatedOffer : offer
         ));
         
@@ -204,7 +205,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
           userId: user.id,
           type: 'offer_declined',
           tradeId: trade._id,
-          message: `Trade offer for ${trade.service.title} was cancelled`,
+          message: `Trade offer for ${typeof trade.service === 'object' && trade.service !== null ? trade.service.title : 'Unknown Service'} was cancelled`,
           read: false,
           createdAt: new Date()
         };
@@ -213,6 +214,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       });
 
       newSocket.on('trade_completed', (trade: BackendTrade) => {
+        console.log('[TradeContext] Received trade_completed:', trade);
         const updatedOffer = mapTradeToTradeOffer(trade);
         
         // Remove from pending/sent and add to completed
@@ -226,7 +228,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
           userId: user.id,
           type: 'trade_completed',
           tradeId: trade._id,
-          message: `Trade for ${trade.service.title} was completed successfully`,
+          message: `Trade for ${typeof trade.service === 'object' && trade.service !== null ? trade.service.title : 'Unknown Service'} was completed successfully`,
           read: false,
           createdAt: new Date()
         };
@@ -244,6 +246,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
   // Helper function to map backend trade to frontend TradeOffer format
   interface BackendUser { _id: string; name?: string }
   interface BackendService { _id: string; title?: string; category?: string }
+  // Move Credentials interface outside to be globally accessible
   interface Credentials { username?: string; email?: string; password?: string; additionalInfo?: string }
   interface BackendTrade {
     _id: string;
@@ -266,15 +269,19 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
   }
 
   const mapTradeToTradeOffer = (trade: BackendTrade): TradeOffer => {
+    const fromUserIsObject = typeof trade.fromUser === 'object' && trade.fromUser !== null;
+    const toUserIsObject = typeof trade.toUser === 'object' && trade.toUser !== null;
+    const serviceIsObject = typeof trade.service === 'object' && trade.service !== null;
+
     return {
       id: trade._id,
-      fromUserId: trade.fromUser._id || trade.fromUser,
-      fromUserName: trade.fromUser.name || 'Unknown User',
-      toUserId: trade.toUser._id || trade.toUser,
-      toUserName: trade.toUser.name || 'Unknown User',
-      serviceId: trade.service._id || trade.service,
-      serviceName: trade.service.title || 'Unknown Service',
-      serviceCategory: trade.service.category || 'Other',
+      fromUserId: fromUserIsObject ? trade.fromUser._id : trade.fromUser,
+      fromUserName: fromUserIsObject ? trade.fromUser.name || 'Unknown User' : 'Unknown User',
+      toUserId: toUserIsObject ? trade.toUser._id : trade.toUser,
+      toUserName: toUserIsObject ? trade.toUser.name || 'Unknown User' : 'Unknown User',
+      serviceId: serviceIsObject ? trade.service._id : trade.service,
+      serviceName: serviceIsObject ? trade.service.title || 'Unknown Service' : 'Unknown Service',
+      serviceCategory: serviceIsObject ? trade.service.category || 'Other' : 'Other',
       offerPrice: trade.offerPrice,
       originalPrice: trade.originalPrice,
       message: trade.message,
@@ -284,7 +291,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       expiresAt: new Date(trade.expiresAt),
       acceptedAt: trade.acceptedAt ? new Date(trade.acceptedAt) : undefined,
       completedAt: trade.completedAt ? new Date(trade.completedAt) : undefined,
-      tradeDetails: trade.tradeDetails || {
+      tradeDetails: trade.tradeDetails && trade.tradeDetails.duration && trade.tradeDetails.accessType ? trade.tradeDetails : {
         duration: 'Not specified',
         accessType: 'share'
       },
@@ -317,12 +324,14 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       const sent: TradeOffer[] = [];
       const completed: TradeOffer[] = [];
       
-      trades.forEach((trade: any) => {
+      trades.forEach((trade: BackendTrade) => {
         const tradeOffer = mapTradeToTradeOffer(trade);
         
+        const fromUserId = typeof trade.fromUser === 'object' ? trade.fromUser._id : trade.fromUser;
+
         if (trade.status === 'completed') {
           completed.push(tradeOffer);
-        } else if (trade.fromUser._id === user.id || trade.fromUser === user.id) {
+        } else if (fromUserId === user?.id) {
           sent.push(tradeOffer);
         } else {
           pending.push(tradeOffer);
@@ -350,7 +359,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       // Prevent sending offers to self (extra guard)
-      if ((offerData as any).toUserId && (offerData as any).toUserId === user.id) {
+      if (offerData.toUserId && offerData.toUserId === user.id) {
         throw new Error('You cannot trade on your own service');
       }
 

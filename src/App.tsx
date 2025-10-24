@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TradeProvider } from "@/contexts/TradeContext";
+import { TradeSessionProvider } from "@/contexts/TradeSessionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
@@ -34,40 +35,42 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <TradeProvider>
-            <Toaster />
-            <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen w-full">
-              <main className="flex-1">
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  
-                  {/* Settings */}
-                  <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-                  <Route path="/settings/password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-                  <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-                  <Route path="/settings/payments" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
-                  <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-                  <Route path="/list-service" element={<ProtectedRoute><ListService /></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/trades" element={<ProtectedRoute><TradeCenter /></ProtectedRoute>} />
-                  
-                  {/* Catch-all route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </BrowserRouter>
+            <TradeSessionProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="min-h-screen w-full">
+                  <main className="flex-1">
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<Index />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/signup" element={<SignUp />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/features" element={<Features />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      
+                      {/* Settings */}
+                      <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+                      <Route path="/settings/password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+                      <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+                      <Route path="/settings/payments" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
+                      
+                      {/* Protected Routes */}
+                      <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+                      <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+                      <Route path="/list-service" element={<ProtectedRoute><ListService /></ProtectedRoute>} />
+                      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                      <Route path="/trades" element={<ProtectedRoute><TradeCenter /></ProtectedRoute>} />
+                      
+                      {/* Catch-all route */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </div>
+              </BrowserRouter>
+            </TradeSessionProvider>
           </TradeProvider>
         </AuthProvider>
       </TooltipProvider>

@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema({
     default: null,
     trim: true
   },
+  // Added role for admin controls
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'superadmin'],
+    default: 'user'
+  },
   isVerified: {
     type: Boolean,
     default: false
@@ -175,6 +181,7 @@ userSchema.methods.updateTradeStats = function(isSuccessful = true, earnings = 0
 // Index for performance
 userSchema.index({ email: 1 });
 userSchema.index({ discordId: 1 });
+userSchema.index({ role: 1 });
 userSchema.index({ 'tradeStats.rating': -1 });
 userSchema.index({ 'tradeStats.totalTrades': -1 });
 

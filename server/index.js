@@ -15,7 +15,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:8080';
 
 // Security & middleware
 app.use(helmet());
-app.use(cors({ origin: [CLIENT_URL, 'http://127.0.0.1:8080', 'http://127.0.0.1:8081', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true }));
+app.use(cors({ origin: [CLIENT_URL, 'http://127.0.0.1:8080', 'http://127.0.0.1:8081', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173'], credentials: true }));
 app.use(express.json());
 
 // Simple structured request logging
@@ -69,8 +69,10 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/trades', require('./routes/trades'));
+app.use('/api/feedback', require('./routes/feedback'));
 // Secure trade sessions workflow
 app.use('/api/trade-sessions', require('./routes/tradeSessions'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Optional Discord Karuta workflow integration (gated by env flag)
 if (process.env.DISCORD_KARUTA_ENABLED === 'true') {
@@ -109,3 +111,4 @@ const connectWithRetry = async (attempt = 1) => {
 };
 
 connectWithRetry();
+
