@@ -20,6 +20,8 @@ export interface TradeOffer {
   serviceId: string;
   serviceName: string;
   serviceCategory: string;
+  // Linked interactive session id, if available
+  sessionId?: string;
   offerPrice: number;
   originalPrice: number;
   message?: string;
@@ -253,6 +255,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
     fromUser: BackendUser | string;
     toUser: BackendUser | string;
     service: BackendService | string;
+    session?: string;
     offerPrice: number;
     originalPrice: number;
     message?: string;
@@ -282,6 +285,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
       serviceId: serviceIsObject ? trade.service._id : trade.service,
       serviceName: serviceIsObject ? trade.service.title || 'Unknown Service' : 'Unknown Service',
       serviceCategory: serviceIsObject ? trade.service.category || 'Other' : 'Other',
+      sessionId: trade.session,
       offerPrice: trade.offerPrice,
       originalPrice: trade.originalPrice,
       message: trade.message,

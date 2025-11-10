@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useTrade, TradeOffer } from "@/contexts/TradeContext";
 import { useTradeSession } from "@/contexts/TradeSessionContext";
+import { ChatPanel } from "@/components/ChatPanel";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Clock,
@@ -45,7 +46,8 @@ const TradeCenter = () => {
 
   // Trade Session hook and basic session state
   const { startSession, addItems, confirm, finalize, currentSessionId, setCurrentSessionId, getSession, isLoading: isSessionLoading } = useTradeSession();
-  const [commandInput, setCommandInput] = useState("");
+  // Deprecated: command input for manual session open
+  // const [commandInput, setCommandInput] = useState("");
   const [sessionItems, setSessionItems] = useState<{ code: string; type: 'card' | 'currency'; qty?: number }[]>([]);
   const [mfaA, setMfaA] = useState("");
   const [mfaB, setMfaB] = useState("");
@@ -370,29 +372,18 @@ const TradeCenter = () => {
         </div>
       </section>
 
-      {/* Start Trade Session */}
-      <section className="px-4 pb-6">
-        <div className="container mx-auto max-w-6xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>Start Trade Session</CardTitle>
-              <CardDescription>Use command format: kmt @UserName</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input value={commandInput} onChange={(e) => setCommandInput(e.target.value)} placeholder="kmt @UserName" />
-                <Button onClick={onStartSession} disabled={isSessionLoading}>Open Session</Button>
-              </div>
-              {currentSessionId && (
-                <div className="text-sm text-muted-foreground">
-                  Current session: {currentSessionId} • Status: {getSession(currentSessionId)?.status}
-                  {myMfaCode && <p className="font-semibold text-primary">Your MFA Code: {myMfaCode}</p>}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      {/* Trade Chat */}
+      {currentSessionId && (
+        <section className="px-4 pb-6">
+          <div className="container mx-auto max-w-6xl">
+            <ChatPanel sessionId={currentSessionId} />
+            <div className="mt-2 text-sm text-muted-foreground">
+              Current session: {currentSessionId} • Status: {getSession(currentSessionId)?.status}
+              {myMfaCode && <p className="font-semibold text-primary">Your MFA Code: {myMfaCode}</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {currentSessionId && (
         <section className="px-4 pb-12">

@@ -96,7 +96,17 @@ const Dashboard = () => {
         const res = await fetch('/api/services/my', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to fetch your services');
+        if (!res.ok) {
+          let msg = 'Failed to fetch your services';
+          if (res.status === 401) {
+            msg = 'Your session has expired. Please log in again.';
+          } else if (res.status === 403) {
+            msg = 'Not authorized to fetch your services.';
+          } else if (res.status === 500) {
+            msg = 'Server error while fetching your services.';
+          }
+          throw new Error(msg);
+        }
         const docs = await res.json();
         const mapped = docs.map((d: any) => ({
           id: d._id,
@@ -115,8 +125,13 @@ const Dashboard = () => {
         }));
         setMyListings(mapped);
       } catch (err) {
+        const message = (err as Error)?.message || 'Failed to load your listings';
         console.error('[dashboard:my:error]', err);
-        toast({ title: 'Failed to load your listings', variant: 'destructive' });
+        toast({ title: 'Error', description: message, variant: 'destructive' });
+        // Optional: auto-redirect on auth failure
+        if ((err as Error)?.message?.includes('session') || (err as Error)?.message?.includes('log in')) {
+          setTimeout(() => navigate('/login'), 800);
+        }
       }
     };
     run();
@@ -515,6 +530,9 @@ const Dashboard = () => {
                     </Button>
                     <Button variant="outline" className="w-full justify-start" type="button" onClick={() => navigate('/settings/payments')}>
                       Payment Methods
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" type="button" onClick={() => navigate('/settings/2fa')}>
+                      Two-Factor Authentication
                     </Button>
                   </CardContent>
                 </Card>

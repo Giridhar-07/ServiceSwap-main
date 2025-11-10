@@ -7,6 +7,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -17,6 +18,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:8080';
 app.use(helmet());
 app.use(cors({ origin: [CLIENT_URL, 'http://127.0.0.1:8080', 'http://127.0.0.1:8081', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173'], credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Simple structured request logging
 app.use((req, res, next) => {
@@ -65,6 +67,8 @@ try {
 
 // Core auth routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth/2fa', require('./routes/mfa'));
+app.use('/api/oauth', require('./routes/oauth'));
 
 app.use('/api/users', require('./routes/users'));
 app.use('/api/services', require('./routes/services'));
@@ -72,7 +76,11 @@ app.use('/api/trades', require('./routes/trades'));
 app.use('/api/feedback', require('./routes/feedback'));
 // Secure trade sessions workflow
 app.use('/api/trade-sessions', require('./routes/tradeSessions'));
+// Chat routes under trade sessions (messages, read receipts)
+app.use(require('./routes/chat'));
 app.use('/api/admin', require('./routes/admin'));
+// Payments
+app.use('/api/payments', require('./routes/payments'));
 
 // Optional Discord Karuta workflow integration (gated by env flag)
 if (process.env.DISCORD_KARUTA_ENABLED === 'true') {

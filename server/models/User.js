@@ -14,12 +14,14 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    // Allow common email formats including plus tags (e.g., name+tag@example.com)
+    // This regex is purposefully permissive and defers strict validation to express-validator
+    match: [/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/ , 'Please enter a valid email']
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minLength: [6, 'Password must be at least 6 characters']
+    minLength: [8, 'Password must be at least 8 characters']
   },
   phone: {
     type: String,
@@ -153,6 +155,31 @@ userSchema.pre('save', async function(next) {
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// 2FA fields
+userSchema.add({
+  mfaEnabled: { type: Boolean, default: false },
+  mfaSecretEnc: { type: String, default: null, select: false },
+});
+
+/**
+ * Set TOTP secret (encrypted) for the user.
+ */
+userSchema.methods.setMfaSecret = function(secretPlain) {
+  const { encrypt } = require('../utils/crypto');
+  this.mfaSecretEnc = encrypt(secretPlain);
+};
+
+/**
+ * Verify a TOTP code using the stored secret.
+ */
+userSchema.methods.verifyTotp = function(code) {
+  const { decrypt } = require('../utils/crypto');
+  const speakeasy = require('speakeasy');
+  if (!this.mfaSecretEnc) return false;
+  const secret = decrypt(this.mfaSecretEnc);
+  return speakeasy.totp.verify({ secret, encoding: 'ascii', token: String(code), window: 1 });
 };
 
 // Generate verification token

@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Service = require('../models/Service');
 const { authRequired } = require('../middleware/auth');
 const mongoose = require('mongoose');
+const TradeSession = require('../models/TradeSession');
 
 // Get socket.io instance
 const { getIO } = require('../socket');
@@ -84,7 +85,7 @@ router.post('/',
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 48);
 
-      // Create new trade
+      // Create new trade (session will be created below)
       const newTrade = new Trade({
         fromUser: fromUserId,
         toUser: service.seller,
@@ -100,7 +101,24 @@ router.post('/',
         tradeProtectionLevel: 'basic'
       });
 
+      // Create a dedicated trade session immediately upon request initiation
+      const session = await TradeSession.create({
+        participants: { a: fromUserId, b: service.seller },
+        createdBy: fromUserId,
+        status: 'open',
+        items: { a: [], b: [] },
+        confirmations: { a: false, b: false },
+        mfa: { a: (Math.floor(100000 + Math.random() * 900000)).toString(), b: (Math.floor(100000 + Math.random() * 900000)).toString() },
+        auditLog: [{ event: 'session_opened', data: { fromUserId, toUserId: service.seller.toString(), tradeId: null } }]
+      });
+
+      // Link session to trade and persist trade
+      newTrade.session = session._id;
       await newTrade.save();
+
+      // Update the session audit log with the trade link
+      session.auditLog.push({ event: 'linked_trade', data: { tradeId: newTrade._id.toString() } });
+      await session.save();
 
       // Populate the trade with user and service details for the response
       const populatedTrade = await Trade.findById(newTrade._id)
@@ -108,12 +126,18 @@ router.post('/',
         .populate('toUser', 'name email avatar')
         .populate('service', 'title description price category');
 
-      // Emit socket event to the service owner
+      // Emit socket events
       const io = getIO();
       io.to(`user:${service.seller}`).emit('new_trade_offer', populatedTrade);
+      // Inform both parties that a trade session has been opened and provide the session id
+      io.to(`user:${fromUserId}`).emit('trade_session_opened', { id: session._id.toString(), tradeId: populatedTrade._id.toString() });
+      io.to(`user:${service.seller}`).emit('trade_session_opened', { id: session._id.toString(), tradeId: populatedTrade._id.toString() });
 
       console.info('[trades:create:success]', { tradeId: populatedTrade._id.toString(), fromUserId, toUserId: service.seller.toString() });
-      return res.status(201).json(populatedTrade);
+      // Include the session id in the response for UI integration
+      const response = populatedTrade.toObject();
+      response.session = session._id;
+      return res.status(201).json(response);
     } catch (err) {
       console.error('[trades:create:error]', err);
       return res.status(500).json({ message: 'Server error' });
@@ -158,6 +182,22 @@ router.put('/:id/accept', authRequired, async (req, res) => {
       .populate('fromUser', 'name email avatar')
       .populate('toUser', 'name email avatar')
       .populate('service', 'title description price category');
+
+    // Update linked session status (open) and audit trail
+    if (trade.session) {
+      try {
+        const session = await TradeSession.findById(trade.session);
+        if (session) {
+          session.status = 'open';
+          session.auditLog.push({ event: 'trade_accepted', data: { by: userId } });
+          await session.save();
+          io.to(`user:${session.participants.a.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+          io.to(`user:${session.participants.b.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+        }
+      } catch (e) {
+        console.warn('[trades:accept:session_update_failed]', { tradeId, sessionId: trade.session?.toString() });
+      }
+    }
 
     // Emit socket event to the trade creator
     const io = getIO();
@@ -208,6 +248,22 @@ router.put('/:id/decline', authRequired, async (req, res) => {
       .populate('toUser', 'name email avatar')
       .populate('service', 'title description price category');
 
+    // Update linked session status (cancelled) and audit trail
+    if (trade.session) {
+      try {
+        const session = await TradeSession.findById(trade.session);
+        if (session) {
+          session.status = 'cancelled';
+          session.auditLog.push({ event: 'trade_declined', data: { by: userId } });
+          await session.save();
+          io.to(`user:${session.participants.a.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+          io.to(`user:${session.participants.b.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+        }
+      } catch (e) {
+        console.warn('[trades:decline:session_update_failed]', { tradeId, sessionId: trade.session?.toString() });
+      }
+    }
+
     // Emit socket event to the trade creator
     const io = getIO();
     io.to(`user:${trade.fromUser}`).emit('trade_declined', populatedTrade);
@@ -256,6 +312,22 @@ router.put('/:id/cancel', authRequired, async (req, res) => {
       .populate('fromUser', 'name email avatar')
       .populate('toUser', 'name email avatar')
       .populate('service', 'title description price category');
+
+    // Update linked session status (cancelled) and audit trail
+    if (trade.session) {
+      try {
+        const session = await TradeSession.findById(trade.session);
+        if (session) {
+          session.status = 'cancelled';
+          session.auditLog.push({ event: 'trade_cancelled', data: { by: userId } });
+          await session.save();
+          io.to(`user:${session.participants.a.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+          io.to(`user:${session.participants.b.toString()}`).emit('trade_session_status', { id: session._id.toString(), status: session.status });
+        }
+      } catch (e) {
+        console.warn('[trades:cancel:session_update_failed]', { tradeId, sessionId: trade.session?.toString() });
+      }
+    }
 
     // Emit socket event to the trade recipient
     const io = getIO();

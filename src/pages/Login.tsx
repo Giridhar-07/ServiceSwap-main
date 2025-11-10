@@ -33,6 +33,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    mfaCode: "",
     rememberMe: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,7 +54,7 @@ const Login = () => {
       const validatedData = loginSchema.parse(formData);
       setIsSubmitting(true);
       
-      await login(validatedData.email, validatedData.password);
+      await login(validatedData.email, validatedData.password, formData.mfaCode || undefined);
       
       toast({
         title: "Login successful!",
@@ -215,6 +216,20 @@ const Login = () => {
                   {errors.password && (
                     <p className="text-sm text-destructive">{errors.password}</p>
                   )}
+                </div>
+
+                {/* Optional 2FA code */}
+                <div className="space-y-2">
+                  <Label htmlFor="mfa" className="text-sm font-medium">
+                    2FA Code (if enabled)
+                  </Label>
+                  <Input
+                    id="mfa"
+                    type="text"
+                    placeholder="123456"
+                    value={formData.mfaCode}
+                    onChange={(e) => handleChange("mfaCode", e.target.value)}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
